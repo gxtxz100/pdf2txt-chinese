@@ -11,45 +11,35 @@ def get_num_pages(pdf_path):
     reader = PdfReader(pdf_path)
     return len(reader.pages)
 
-def process_pages(pdf_path, start_page, end_page):
+def process_and_write_page(pdf_path, start_page, end_page, output_file):
     images = convert_from_path(pdf_path, dpi=300, first_page=start_page, last_page=end_page)
-    text_pages = {}
+    with open(output_file, 'a', encoding='utf-8') as file:
+        for i, image in enumerate(images, start=start_page):
+            gray_image = ImageOps.grayscale(image)
+            text = pytesseract.image_to_string(gray_image, lang='chi_sim+eng')
+            print(f"\nPage {i} Text:\n{text}")  # Print recognized text
+            file.write(text + "\n")
 
-    for i, image in enumerate(images, start=start_page):
-        gray_image = ImageOps.grayscale(image)
-        text = pytesseract.image_to_string(gray_image, lang='chi_sim+eng')
-        print(f"\nPage {i} Text:\n{text}")  # Print recognized text
-        text_pages[i] = text + "\n"
-
-    return text_pages
-
-def extract_text_from_pdf(pdf_path, num_pages):
-    all_text_pages = {}
+def extract_text_from_pdf(pdf_path, num_pages, output_file):
     max_workers = os.cpu_count() or 4
     memory = psutil.virtual_memory()
 
     # Adjust batch_size based on available memory
     batch_size = max(1, int(memory.available / (500 * 1024 * 1024)))  # 500MB per batch
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor, open(output_file, 'w', encoding='utf-8') as file:
+        file.write("")  # Clear the file or ensure it's created
         futures = []
         for start_page in range(1, num_pages + 1, batch_size):
             end_page = min(start_page + batch_size - 1, num_pages)
-            futures.append(executor.submit(process_pages, pdf_path, start_page, end_page))
+            futures.append(executor.submit(process_and_write_page, pdf_path, start_page, end_page, output_file))
 
         for future in tqdm(as_completed(futures), total=len(futures), desc="Processing Pages"):
-            all_text_pages.update(future.result())
+            pass  # The actual writing is done in process_and_write_page, just wait for all to complete
 
-    # Sort and concatenate the text
-    all_text = "".join(all_text_pages[i] for i in sorted(all_text_pages))
-
-    return all_text
-
-pdf_path = 'a.pdf'  # Replace with your PDF file path
+pdf_path = './vvv.pdf'  # Replace with your PDF file path
+output_file = 'extracted_text.txt'  # The file where the extracted text will be saved
 num_pages = get_num_pages(pdf_path)
-extracted_text = extract_text_from_pdf(pdf_path, num_pages)
-
-with open('extracted_text.txt', 'w', encoding='utf-8') as file:
-    file.write(extracted_text)
+extract_text_from_pdf(pdf_path, num_pages, output_file)
 
 print("Text extraction and saving complete.")
