@@ -21,6 +21,20 @@ https://colab.research.google.com/gist/flyyuan/f0a011b7a4ec03ba3905ac5bf427c1dd/
 - psutil
 - Tesseract OCR
 
+#### macOS:
+```bash
+# 安装 Homebrew（如果尚未安装）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 安装必要的依赖
+brew install tesseract
+brew install tesseract-lang
+brew install poppler
+
+# 安装 Python 依赖
+pip install PyPDF2 pdf2image Pillow pytesseract tqdm psutil
+```
+
 ### 安装说明
 1. **Python**：确保系统已安装Python。如果没有，请从[python.org](https://www.python.org/)下载并安装。
 2. **库安装**：通过以下命令安装所需的Python库：
